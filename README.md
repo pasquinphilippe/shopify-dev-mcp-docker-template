@@ -7,7 +7,8 @@ Dockerized Shopify.dev MCP server that exposes an HTTP endpoint for integration 
 - **HTTP Streamable**: Access the Shopify Dev MCP server via HTTP instead of stdio
 - **N8N Compatible**: Perfect for connecting to N8N workflows
 - **Cloud Deployable**: Ready to deploy to Digital Ocean App Platform
-- **Supergateway Powered**: Uses Latitude Data's Supergateway to bridge stdio to HTTP
+- **Custom HTTP Server**: Custom Node.js server that wraps the Shopify Dev MCP
+- **Real-time Communication**: Uses SSE (Server-Sent Events) for streaming responses
 
 ## Quick Start
 
@@ -29,8 +30,9 @@ Dockerized Shopify.dev MCP server that exposes an HTTP endpoint for integration 
    ```
 
 Your MCP server will be available at:
-- SSE endpoint: `https://your-app-url.do/sse`
-- Message endpoint: `https://your-app-url.do/message`
+- **SSE endpoint**: `https://your-app-url.do/sse` - Server-Sent Events for subscribing to responses
+- **Message endpoint**: `https://your-app-url.do/message` - Send MCP requests
+- **Health endpoint**: `https://your-app-url.do/health` - Check server status
 
 ## Available Tools
 
@@ -68,20 +70,34 @@ You can configure the following environment variables in Digital Ocean:
 
 ## Local Development
 
-Run locally with Docker:
+Run locally with Node.js:
+
+```bash
+npm start
+```
+
+Or with Docker:
 
 ```bash
 docker build -t shopify-dev-mcp .
 docker run -p 8080:8080 -e PORT=8080 shopify-dev-mcp
 ```
 
-Connect to: `http://localhost:8080/sse` (SSE) or `http://localhost:8080/message` (HTTP POST)
+Connect to:
+- SSE: `http://localhost:8080/sse` - Subscribe to MCP responses
+- Message: `http://localhost:8080/message` - Send MCP requests
+- Health: `http://localhost:8080/health` - Check status
 
 ## Architecture
 
 ```
-N8N/Client → HTTP → Supergateway → stdio → Shopify Dev MCP
-                    (Port 8080)
+N8N/Client → HTTP → Custom HTTP Server → stdio → Shopify Dev MCP
+                         (Node.js)         (Port 8080)
 ```
 
-Supergateway bridges the stdio-based MCP protocol to HTTP, making it accessible to web-based clients.
+The custom Node.js server:
+1. Spawns the Shopify Dev MCP server as a child process
+2. Bridges stdio communication to HTTP endpoints
+3. Implements JSON-RPC 2.0 protocol over HTTP
+4. Uses SSE for real-time streaming responses
+5. Handles message routing between multiple clients

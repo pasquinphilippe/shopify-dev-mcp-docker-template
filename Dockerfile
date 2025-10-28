@@ -1,10 +1,15 @@
 FROM node:18-alpine
 
-# Install Shopify Dev MCP and Supergateway globally
-RUN npm i -g @shopify/dev-mcp @latitude-data/supergateway
+# Install Shopify Dev MCP globally
+RUN npm i -g @shopify/dev-mcp
 
-# Expose the Supergateway HTTP endpoint to bridge the MCP server to HTTP
-# This allows clients like N8N to connect via HTTP instead of stdio
-# SSE endpoint: /sse
-# Message endpoint: /message
-CMD sh -c 'npx -y @latitude-data/supergateway --stdio "npx -y @shopify/dev-mcp@latest" --port $PORT --ssePath /sse --messagePath /message'
+# Copy server files
+COPY server.js /app/server.js
+COPY package.json /app/package.json
+
+WORKDIR /app
+
+# Expose the custom HTTP MCP server
+EXPOSE 8080
+
+CMD ["node", "server.js"]

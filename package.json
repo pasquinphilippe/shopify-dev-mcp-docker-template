@@ -1,0 +1,19 @@
+{
+  "name": "shopify-dev-mcp-http-server",
+  "version": "1.0.0",
+  "description": "HTTP wrapper for Shopify Dev MCP server",
+  "type": "module",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "keywords": [
+    "mcp",
+    "shopify",
+    "http",
+    "server"
+  ],
+  "author": "",
+  "license": "MIT"
+}
+

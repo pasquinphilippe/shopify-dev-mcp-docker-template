@@ -15,7 +15,7 @@ services:
       - path: /sse
       - path: /message
     health_check:
-      http_path: /
+      http_path: /health
       initial_delay_seconds: 30
       period_seconds: 10
       timeout_seconds: 5
