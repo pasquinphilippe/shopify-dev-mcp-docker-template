@@ -41,10 +41,10 @@ mcpProcess.stdout.on("data", (data) => {
 
   for (const line of lines) {
     if (!line.trim()) continue;
-    
+
     try {
       const message = JSON.parse(line);
-      
+
       // If message has an id, route to the appropriate SSE connection
       if (message.id && requestMap.has(message.id)) {
         const connectionId = requestMap.get(message.id);
@@ -244,7 +244,7 @@ const server = createServer((req, res) => {
     req.on("end", () => {
       try {
         const request = JSON.parse(body);
-        
+
         // Get session from query or headers
         const sessionId = query.sessionId || req.headers["x-session-id"];
 
