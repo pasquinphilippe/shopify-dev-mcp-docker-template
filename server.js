@@ -21,8 +21,9 @@ const PORT = process.env.PORT || 8080;
 const API_KEY = process.env.API_KEY;
 const ENABLE_AUTH = API_KEY && API_KEY.length > 0;
 
-// Store active SSE connections by session ID
+// Store active SSE connections by session ID and request IDs
 const connections = new Map();
+const requestMap = new Map(); // Map request IDs to SSE connections
 
 // Spawn the Shopify Dev MCP server as a child process
 const mcpProcess = spawn("npx", ["-y", "@shopify/dev-mcp@latest"], {
@@ -40,20 +41,18 @@ mcpProcess.stdout.on("data", (data) => {
 
   for (const line of lines) {
     if (!line.trim()) continue;
-
+    
     try {
       const message = JSON.parse(line);
-
-      // If message has an id, it's a response - send to the appropriate client
-      if (message.id && connections.has(message.id)) {
-        const connection = connections.get(message.id);
+      
+      // If message has an id, route to the appropriate SSE connection
+      if (message.id && requestMap.has(message.id)) {
+        const connectionId = requestMap.get(message.id);
+        const connection = connections.get(connectionId);
         if (connection) {
           connection.write(`data: ${JSON.stringify(message)}\n\n`);
         }
-        // Clean up one-time requests
-        if (!connection.keepAlive) {
-          connections.delete(message.id);
-        }
+        requestMap.delete(message.id);
       }
     } catch (error) {
       console.error("Error parsing MCP response:", error);
@@ -209,19 +208,6 @@ const server = createServer((req, res) => {
       "X-Session-Id": sessionId
     });
 
-    // Send initial connection message
-    res.write(`data: ${JSON.stringify({
-      jsonrpc: "2.0",
-      method: "mcp/initialized",
-      params: {
-        sessionId,
-        serverInfo: {
-          name: "shopify-dev-mcp-http",
-          version: "1.0.0"
-        }
-      }
-    })}\n\n`);
-
     // Store connection
     connections.set(sessionId, {
       write: (data) => res.write(data),
@@ -231,6 +217,12 @@ const server = createServer((req, res) => {
     // Clean up on disconnect
     req.on("close", () => {
       connections.delete(sessionId);
+      // Clean up any pending requests for this session
+      for (const [reqId, connId] of requestMap.entries()) {
+        if (connId === sessionId) {
+          requestMap.delete(reqId);
+        }
+      }
     });
 
     return;
@@ -247,10 +239,18 @@ const server = createServer((req, res) => {
     req.on("end", () => {
       try {
         const request = JSON.parse(body);
+        
+        // Get session from query or headers
+        const sessionId = query.sessionId || req.headers["x-session-id"];
 
         // Ensure request has an id for tracking
         if (!request.id) {
           request.id = `req-${Date.now()}-${Math.random()}`;
+        }
+
+        // Map request ID to session for response routing
+        if (sessionId && connections.has(sessionId)) {
+          requestMap.set(request.id, sessionId);
         }
 
         // Forward request to MCP server via stdin
