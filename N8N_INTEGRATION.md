@@ -20,6 +20,8 @@ Since N8N supports SSE (Server-Sent Events) in newer versions, you can use it to
    - URL: `https://shopify-mcp-dev-nidfy.ondigitalocean.app/sse`
    - Options → Response → Response Format: `Stream`
    - Options → Response → Include Response Headers: `Yes`
+   - Headers (if API_KEY is configured):
+     - `Authorization`: `Bearer YOUR_API_KEY`
 
 2. **Send MCP Messages**
    - Add another HTTP Request node
@@ -27,6 +29,7 @@ Since N8N supports SSE (Server-Sent Events) in newer versions, you can use it to
    - URL: `https://shopify-mcp-dev-nidfy.ondigitalocean.app/message`
    - Headers:
      - `Content-Type`: `application/json`
+     - `Authorization`: `Bearer YOUR_API_KEY` (if API_KEY is configured)
    - Body (JSON):
      ```json
      {

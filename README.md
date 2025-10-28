@@ -65,8 +65,25 @@ After deploying, configure N8N to connect to your MCP server:
 You can configure the following environment variables in Digital Ocean:
 
 - `PORT` - Port number (default: 8080) - already configured
-- `OPT_OUT_INSTRUMENTATION` - Set to "true" to disable telemetry
+- `API_KEY` - (Optional) API key for authentication. If not set, the server runs without authentication
+- `OPT_OUT_INSTRUMENTATION` - Set to "true" to disable Shopify Dev MCP telemetry
 - `LIQUID_VALIDATION_MODE` - Set to "full" (default) or "partial"
+
+### Authentication
+
+The server supports optional API key authentication via:
+1. **Authorization Header**: `Authorization: Bearer <API_KEY>`
+2. **Query Parameter**: `?apiKey=<API_KEY>`
+
+Example with auth:
+```bash
+# Using Authorization header
+curl -H "Authorization: Bearer your-api-key" \
+  https://your-app-url/sse
+
+# Using query parameter (for SSE)
+curl https://your-app-url/sse?apiKey=your-api-key
+```
 
 ## Local Development
 

@@ -17,6 +17,10 @@ import { parse } from "url";
 
 const PORT = process.env.PORT || 8080;
 
+// Authentication
+const API_KEY = process.env.API_KEY;
+const ENABLE_AUTH = API_KEY && API_KEY.length > 0;
+
 // Store active SSE connections by session ID
 const connections = new Map();
 
@@ -73,6 +77,45 @@ mcpProcess.on("exit", (code) => {
 });
 
 /**
+ * Authentication middleware
+ */
+function authenticate(req, query) {
+  if (!ENABLE_AUTH) return true;
+  
+  // Check Authorization header
+  const authHeader = req.headers.authorization;
+  if (authHeader) {
+    const token = authHeader.replace(/^Bearer\s+/i, "");
+    if (token === API_KEY) return true;
+  }
+  
+  // Check query parameter
+  if (query.apiKey && query.apiKey === API_KEY) {
+    return true;
+  }
+  
+  return false;
+}
+
+/**
+ * Send unauthorized response
+ */
+function sendUnauthorized(res) {
+  res.writeHead(401, { 
+    "Content-Type": "application/json",
+    "WWW-Authenticate": "Bearer realm=\"MCP Server\""
+  });
+  res.end(JSON.stringify({
+    jsonrpc: "2.0",
+    error: {
+      code: -32001,
+      message: "Unauthorized",
+      data: "API key required"
+    }
+  }));
+}
+
+/**
  * Create HTTP server
  */
 const server = createServer((req, res) => {
@@ -81,11 +124,19 @@ const server = createServer((req, res) => {
   // CORS headers
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
-
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+  
   if (req.method === "OPTIONS") {
     res.writeHead(200);
     res.end();
+    return;
+  }
+  
+  // Skip authentication for health check
+  if (pathname === "/health") {
+    // Continue to health endpoint handling
+  } else if (!authenticate(req, query)) {
+    sendUnauthorized(res);
     return;
   }
 
@@ -193,4 +244,10 @@ server.listen(PORT, () => {
   console.log(`Shopify Dev MCP HTTP Server running on port ${PORT}`);
   console.log(`SSE endpoint: http://localhost:${PORT}/sse`);
   console.log(`Message endpoint: http://localhost:${PORT}/message`);
+  console.log(`Health endpoint: http://localhost:${PORT}/health`);
+  if (ENABLE_AUTH) {
+    console.log("🔐 Authentication: ENABLED");
+  } else {
+    console.log("⚠️  Authentication: DISABLED (set API_KEY to enable)");
+  }
 });
