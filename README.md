@@ -30,8 +30,9 @@ Dockerized Shopify.dev MCP server that exposes an HTTP endpoint for integration 
    ```
 
 Your MCP server will be available at:
-- **SSE endpoint**: `https://your-app-url.do/sse` - Server-Sent Events for subscribing to responses
-- **Message endpoint**: `https://your-app-url.do/message` - Send MCP requests
+- **HTTP Stream endpoint**: `https://your-app-url.do/stream` (PUT) - Bidirectional streaming - **Recommended**
+- **SSE endpoint**: `https://your-app-url.do/sse` (GET) - Legacy SSE for responses
+- **Message endpoint**: `https://your-app-url.do/message` (POST) - For SSE transport
 - **Health endpoint**: `https://your-app-url.do/health` - Check server status
 
 ## Available Tools

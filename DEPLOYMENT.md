@@ -69,4 +69,3 @@ If you need to change the API key:
 1. Update the value in Digital Ocean dashboard
 2. Redeploy the app
 3. Update N8N and other clients with the new key
-

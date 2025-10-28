@@ -123,7 +123,7 @@ const server = createServer((req, res) => {
 
   // CORS headers
   res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+  res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
   
   if (req.method === "OPTIONS") {
@@ -137,6 +137,64 @@ const server = createServer((req, res) => {
     // Continue to health endpoint handling
   } else if (!authenticate(req, query)) {
     sendUnauthorized(res);
+    return;
+  }
+  
+  // HTTP Stream endpoint for bidirectional communication
+  if (pathname === "/stream" && req.method === "PUT") {
+    const sessionId = query.sessionId || `stream-${Date.now()}-${Math.random()}`;
+    
+    res.writeHead(200, {
+      "Content-Type": "application/x-ndjson",
+      "Cache-Control": "no-cache",
+      "Connection": "keep-alive",
+      "Transfer-Encoding": "chunked"
+    });
+    
+    // Store connection
+    connections.set(sessionId, {
+      write: (data) => res.write(data + "\n"),
+      keepAlive: true
+    });
+    
+    // Send initial connection message
+    res.write(JSON.stringify({
+      jsonrpc: "2.0",
+      method: "mcp/initialized",
+      params: {
+        sessionId,
+        serverInfo: {
+          name: "shopify-dev-mcp-http",
+          version: "1.0.0",
+          transport: "http-stream"
+        }
+      }
+    }) + "\n");
+    
+    // Handle incoming messages from client
+    let buffer = "";
+    req.on("data", (chunk) => {
+      buffer += chunk.toString();
+      const lines = buffer.split("\n");
+      buffer = lines.pop() || "";
+      
+      for (const line of lines) {
+        if (!line.trim()) continue;
+        try {
+          const request = JSON.parse(line);
+          // Forward to MCP server
+          mcpProcess.stdin.write(JSON.stringify(request) + "\n");
+        } catch (error) {
+          console.error("Error parsing stream request:", error);
+        }
+      }
+    });
+    
+    // Clean up on disconnect
+    req.on("close", () => {
+      connections.delete(sessionId);
+    });
+    
     return;
   }
 
@@ -242,8 +300,9 @@ const server = createServer((req, res) => {
 
 server.listen(PORT, () => {
   console.log(`Shopify Dev MCP HTTP Server running on port ${PORT}`);
-  console.log(`SSE endpoint: http://localhost:${PORT}/sse`);
-  console.log(`Message endpoint: http://localhost:${PORT}/message`);
+  console.log(`HTTP Stream endpoint: http://localhost:${PORT}/stream (PUT) - Recommended`);
+  console.log(`SSE endpoint: http://localhost:${PORT}/sse (GET) - Legacy`);
+  console.log(`Message endpoint: http://localhost:${PORT}/message (POST) - For SSE`);
   console.log(`Health endpoint: http://localhost:${PORT}/health`);
   if (ENABLE_AUTH) {
     console.log("🔐 Authentication: ENABLED");
