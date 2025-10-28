@@ -22,4 +22,3 @@ services:
     envs:
       - key: PORT
         value: "8080"
-
