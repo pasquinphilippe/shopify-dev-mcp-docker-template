@@ -28,7 +28,9 @@ Dockerized Shopify.dev MCP server that exposes an HTTP endpoint for integration 
    doctl apps get <app-id> --format Domains
    ```
 
-Your MCP server will be available at: `https://your-app-url.do/mcp`
+Your MCP server will be available at:
+- SSE endpoint: `https://your-app-url.do/sse`
+- Message endpoint: `https://your-app-url.do/message`
 
 ## Available Tools
 
@@ -50,9 +52,9 @@ After deploying, configure N8N to connect to your MCP server:
 1. **Get your deployed app URL** (e.g., `https://shopify-mcp-server-xyz.ondigitalocean.app`)
 
 2. **Add the MCP Server configuration in N8N:**
-   - Server URL: `https://your-app-url/mcp`
+   - Server URL: `https://your-app-url/sse`
    - Protocol: HTTP
-   - Transport: SSE or HTTP Stream
+   - Transport: SSE (Server-Sent Events)
 
 3. **Use the available tools** in your N8N workflows
 
@@ -73,7 +75,7 @@ docker build -t shopify-dev-mcp .
 docker run -p 8080:8080 -e PORT=8080 shopify-dev-mcp
 ```
 
-Connect to: `http://localhost:8080/mcp`
+Connect to: `http://localhost:8080/sse` (SSE) or `http://localhost:8080/message` (HTTP POST)
 
 ## Architecture
 

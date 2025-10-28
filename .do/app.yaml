@@ -12,7 +12,8 @@ services:
     instance_size_slug: basic-xxs
     routes:
       - path: /
-      - path: /mcp
+      - path: /sse
+      - path: /message
     health_check:
       http_path: /
       initial_delay_seconds: 30
