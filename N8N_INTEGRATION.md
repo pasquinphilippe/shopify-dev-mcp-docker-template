@@ -184,4 +184,3 @@ MCP responses follow the JSON-RPC 2.0 protocol:
 - The server maintains long-lived SSE connections
 - Some tools may take time to respond (e.g., fetching full docs)
 - Increase timeout settings in N8N if needed
-
