@@ -2,10 +2,10 @@
 
 /**
  * HTTP MCP Server for Shopify Dev MCP
- * 
+ *
  * This server wraps the Shopify Dev MCP server (@shopify/dev-mcp) and exposes it
  * via HTTP endpoints, making it accessible to N8N and other HTTP clients.
- * 
+ *
  * The server implements the MCP protocol over HTTP using:
  * - SSE (Server-Sent Events) for streaming responses
  * - HTTP POST for sending messages
@@ -29,17 +29,17 @@ const mcpProcess = spawn("npx", ["-y", "@shopify/dev-mcp@latest"], {
 let buffer = "";
 mcpProcess.stdout.on("data", (data) => {
   buffer += data.toString();
-  
+
   // Parse JSON-RPC messages (MCP uses JSON-RPC 2.0)
   const lines = buffer.split("\n");
   buffer = lines.pop() || ""; // Keep incomplete line in buffer
-  
+
   for (const line of lines) {
     if (!line.trim()) continue;
-    
+
     try {
       const message = JSON.parse(line);
-      
+
       // If message has an id, it's a response - send to the appropriate client
       if (message.id && connections.has(message.id)) {
         const connection = connections.get(message.id);
@@ -77,29 +77,29 @@ mcpProcess.on("exit", (code) => {
  */
 const server = createServer((req, res) => {
   const { pathname, query } = parse(req.url, true);
-  
+
   // CORS headers
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
-  
+
   if (req.method === "OPTIONS") {
     res.writeHead(200);
     res.end();
     return;
   }
-  
+
   // SSE endpoint for subscribing to MCP server
   if (pathname === "/sse" || pathname === "/") {
     const sessionId = query.sessionId || `session-${Date.now()}-${Math.random()}`;
-    
+
     res.writeHead(200, {
       "Content-Type": "text/event-stream",
       "Cache-Control": "no-cache",
       "Connection": "keep-alive",
       "X-Session-Id": sessionId
     });
-    
+
     // Send initial connection message
     res.write(`data: ${JSON.stringify({
       jsonrpc: "2.0",
@@ -112,41 +112,41 @@ const server = createServer((req, res) => {
         }
       }
     })}\n\n`);
-    
+
     // Store connection
     connections.set(sessionId, {
       write: (data) => res.write(data),
       keepAlive: true
     });
-    
+
     // Clean up on disconnect
     req.on("close", () => {
       connections.delete(sessionId);
     });
-    
+
     return;
   }
-  
+
   // Message endpoint for sending MCP requests
   if (pathname === "/message") {
     let body = "";
-    
+
     req.on("data", (chunk) => {
       body += chunk;
     });
-    
+
     req.on("end", () => {
       try {
         const request = JSON.parse(body);
-        
+
         // Ensure request has an id for tracking
         if (!request.id) {
           request.id = `req-${Date.now()}-${Math.random()}`;
         }
-        
+
         // Forward request to MCP server via stdin
         mcpProcess.stdin.write(JSON.stringify(request) + "\n");
-        
+
         // Send acknowledgment
         res.writeHead(200, { "Content-Type": "application/json" });
         res.end(JSON.stringify({
@@ -154,7 +154,7 @@ const server = createServer((req, res) => {
           id: request.id,
           result: { accepted: true }
         }));
-        
+
       } catch (error) {
         console.error("Error handling message:", error);
         res.writeHead(400, { "Content-Type": "application/json" });
@@ -168,10 +168,10 @@ const server = createServer((req, res) => {
         }));
       }
     });
-    
+
     return;
   }
-  
+
   // Health check endpoint
   if (pathname === "/health") {
     res.writeHead(200, { "Content-Type": "application/json" });
@@ -183,7 +183,7 @@ const server = createServer((req, res) => {
     }));
     return;
   }
-  
+
   // 404 for all other routes
   res.writeHead(404, { "Content-Type": "application/json" });
   res.end(JSON.stringify({ error: "Not Found" }));
@@ -194,4 +194,3 @@ server.listen(PORT, () => {
   console.log(`SSE endpoint: http://localhost:${PORT}/sse`);
   console.log(`Message endpoint: http://localhost:${PORT}/message`);
 });
-
