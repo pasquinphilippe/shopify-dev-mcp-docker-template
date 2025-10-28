@@ -25,5 +25,6 @@ services:
       - key: PORT
         value: "8080"
       - key: API_KEY
+        value: UTafjWIufSFApp1P3i3HqrRhiXbt9FRae8JLQj7cg1w
         scope: RUN_TIME
         type: SECRET
