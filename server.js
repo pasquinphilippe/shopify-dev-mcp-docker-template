@@ -50,9 +50,14 @@ mcpProcess.stdout.on("data", (data) => {
         const connectionId = requestMap.get(message.id);
         const connection = connections.get(connectionId);
         if (connection) {
+          console.log(`Routing response ${message.id} to session ${connectionId}`);
           connection.write(`data: ${JSON.stringify(message)}\n\n`);
+        } else {
+          console.log(`Warning: Connection ${connectionId} not found for response ${message.id}`);
         }
         requestMap.delete(message.id);
+      } else if (message.id) {
+        console.log(`Warning: No mapped connection for response ${message.id}`);
       }
     } catch (error) {
       console.error("Error parsing MCP response:", error);
@@ -248,13 +253,16 @@ const server = createServer((req, res) => {
           request.id = `req-${Date.now()}-${Math.random()}`;
         }
 
-        // Map request ID to session for response routing
-        if (sessionId && connections.has(sessionId)) {
-          requestMap.set(request.id, sessionId);
-        }
+      // Map request ID to session for response routing
+      if (sessionId && connections.has(sessionId)) {
+        requestMap.set(request.id, sessionId);
+        console.log(`Mapped request ${request.id} to session ${sessionId}`);
+      } else {
+        console.log(`Warning: No session found for request ${request.id}`);
+      }
 
-        // Forward request to MCP server via stdin
-        mcpProcess.stdin.write(JSON.stringify(request) + "\n");
+      // Forward request to MCP server via stdin
+      mcpProcess.stdin.write(JSON.stringify(request) + "\n");
 
         // Send acknowledgment
         res.writeHead(200, { "Content-Type": "application/json" });
