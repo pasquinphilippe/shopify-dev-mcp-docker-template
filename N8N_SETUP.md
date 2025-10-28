@@ -17,7 +17,7 @@ In your n8n workflow:
 https://shopify-mcp-dev-nidfy.ondigitalocean.app/sse?apiKey=UTafjWIufSFApp1P3i3HqrRhiXbt9FRae8JLQj7cg1w
 ```
 
-**Authentication Method:** 
+**Authentication Method:**
 - Select **None** (authentication is handled via query parameter in the URL)
 
 OR
@@ -46,7 +46,7 @@ https://shopify-mcp-dev-nidfy.ondigitalocean.app/sse
 When you select **All**, these tools will be available to your AI Agent:
 
 1. **learn_shopify_api** - Teaches about supported Shopify APIs
-2. **search_docs_chunks** - Search across shopify.dev documentation  
+2. **search_docs_chunks** - Search across shopify.dev documentation
 3. **fetch_full_docs** - Retrieve complete documentation pages
 4. **introspect_graphql_schema** - Explore Shopify GraphQL schemas
 5. **validate_graphql_codeblocks** - Validate GraphQL code blocks
@@ -87,4 +87,3 @@ After configuring the MCP Client Tool:
 - [n8n MCP Client Tool Documentation](https://docs.n8n.io/integrations/builtin/cluster-nodes/sub-nodes/n8n-nodes-langchain.toolmcp)
 - [Shopify Dev MCP GitHub Repository](https://github.com/shopify/shopify-dev-mcp)
 - Your MCP Server: `https://shopify-mcp-dev-nidfy.ondigitalocean.app`
-

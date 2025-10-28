@@ -81,19 +81,19 @@ mcpProcess.on("exit", (code) => {
  */
 function authenticate(req, query) {
   if (!ENABLE_AUTH) return true;
-  
+
   // Check Authorization header
   const authHeader = req.headers.authorization;
   if (authHeader) {
     const token = authHeader.replace(/^Bearer\s+/i, "");
     if (token === API_KEY) return true;
   }
-  
+
   // Check query parameter
   if (query.apiKey && query.apiKey === API_KEY) {
     return true;
   }
-  
+
   return false;
 }
 
@@ -101,7 +101,7 @@ function authenticate(req, query) {
  * Send unauthorized response
  */
 function sendUnauthorized(res) {
-  res.writeHead(401, { 
+  res.writeHead(401, {
     "Content-Type": "application/json",
     "WWW-Authenticate": "Bearer realm=\"MCP Server\""
   });
@@ -125,13 +125,13 @@ const server = createServer((req, res) => {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
-  
+
   if (req.method === "OPTIONS") {
     res.writeHead(200);
     res.end();
     return;
   }
-  
+
   // Skip authentication for health check
   if (pathname === "/health") {
     // Continue to health endpoint handling
@@ -139,24 +139,24 @@ const server = createServer((req, res) => {
     sendUnauthorized(res);
     return;
   }
-  
+
   // HTTP Stream endpoint for bidirectional communication
   if (pathname === "/stream" && req.method === "PUT") {
     const sessionId = query.sessionId || `stream-${Date.now()}-${Math.random()}`;
-    
+
     res.writeHead(200, {
       "Content-Type": "application/x-ndjson",
       "Cache-Control": "no-cache",
       "Connection": "keep-alive",
       "Transfer-Encoding": "chunked"
     });
-    
+
     // Store connection
     connections.set(sessionId, {
       write: (data) => res.write(data + "\n"),
       keepAlive: true
     });
-    
+
     // Send initial connection message
     res.write(JSON.stringify({
       jsonrpc: "2.0",
@@ -170,14 +170,14 @@ const server = createServer((req, res) => {
         }
       }
     }) + "\n");
-    
+
     // Handle incoming messages from client
     let buffer = "";
     req.on("data", (chunk) => {
       buffer += chunk.toString();
       const lines = buffer.split("\n");
       buffer = lines.pop() || "";
-      
+
       for (const line of lines) {
         if (!line.trim()) continue;
         try {
@@ -189,12 +189,12 @@ const server = createServer((req, res) => {
         }
       }
     });
-    
+
     // Clean up on disconnect
     req.on("close", () => {
       connections.delete(sessionId);
     });
-    
+
     return;
   }
 
